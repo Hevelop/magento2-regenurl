@@ -1,6 +1,7 @@
 <?php
 namespace Iazel\RegenProductUrl\Console\Command;
 
+use Magento\Framework\App\State;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
@@ -30,11 +31,12 @@ class RegenerateProductUrlCommand extends Command
     protected $collection;
 
     public function __construct(
-        \Magento\Framework\App\State $state,
+        State $state,
         Collection $collection,
         ProductUrlRewriteGenerator $productUrlRewriteGenerator,
         UrlPersistInterface $urlPersist
-    ) {
+    )
+    {
         $state->setAreaCode('adminhtml');
         $this->collection = $collection;
         $this->productUrlRewriteGenerator = $productUrlRewriteGenerator;
@@ -56,24 +58,28 @@ class RegenerateProductUrlCommand extends Command
                 InputOption::VALUE_REQUIRED,
                 'Use the specific Store View',
                 Store::DEFAULT_STORE_ID
-            )
-            ;
+            );
         return parent::configure();
     }
 
+
+    /**
+     * @param InputInterface $inp
+     * @param OutputInterface $out
+     */
     public function execute(InputInterface $inp, OutputInterface $out)
     {
         $store_id = $inp->getOption('store');
         $this->collection->addStoreFilter($store_id)->setStoreId($store_id);
 
         $pids = $inp->getArgument('pids');
-        if( !empty($pids) )
+        if (!empty($pids)) {
             $this->collection->addIdFilter($pids);
+        }
 
         $this->collection->addAttributeToSelect(['url_path', 'url_key']);
         $list = $this->collection->load();
-        foreach($list as $product)
-        {
+        foreach ($list as $product) {
             //if($store_id === Store::DEFAULT_STORE_ID)
             $product->setStoreId($store_id);
 
@@ -87,9 +93,8 @@ class RegenerateProductUrlCommand extends Command
                 $this->urlPersist->replace(
                     $this->productUrlRewriteGenerator->generate($product)
                 );
-            }
-            catch(\Exception $e) {
-                $out->writeln('<error>Duplicated url for '. $product->getId() .'</error>');
+            } catch (\Exception $e) {
+                $out->writeln('<error>Duplicated url for ' . $product->getId() . '</error>');
             }
         }
     }
