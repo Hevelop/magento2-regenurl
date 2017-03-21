@@ -14,9 +14,10 @@ php bin/magento setup:upgrade
 ```
 Usage:
  iazel:regenurl [-s|--store="..."] [pids1] ... [pidsN]
+ iazel:cleanurl [-s|--store="..."] [pids1] ... [pidsN]
 
 Arguments:
- pids                  Products to regenerate
+ pids                  Products to regenerate|remove
 
 Options:
  --store (-s)          Use the specific Store View (default: 0)
@@ -30,4 +31,7 @@ php bin/magento iazel:regenurl
 
 # Regenerate url for products with id (1, 2, 3, 4) for store 1
 php bin/magento iazel:regenurl -s1 1 2 3 4
+
+# Remove url for all products not visible individually
+php bin/magento iazel:cleanurl
 ```

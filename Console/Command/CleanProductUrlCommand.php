@@ -1,4 +1,11 @@
 <?php
+/**
+ *  @category Magento2_Module
+ *  @project Magento 2
+ *  @author   Matteo Manfrin <matteo@hevelop.com>
+ *  @copyright Copyright (c) 2017 Hevelop  (https://hevelop.com)
+ */
+
 namespace Iazel\RegenProductUrl\Console\Command;
 
 use Magento\Framework\App\State;
@@ -12,9 +19,8 @@ use Magento\UrlRewrite\Model\UrlPersistInterface;
 use Magento\CatalogUrlRewrite\Model\ProductUrlRewriteGenerator;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Store\Model\Store;
-use Magento\Store\Model\StoreManagerInterface;
 
-class RegenerateProductUrlCommand extends Command
+class CleanProductUrlCommand extends Command
 {
     /**
      * @var ProductUrlRewriteGenerator
@@ -32,11 +38,6 @@ class RegenerateProductUrlCommand extends Command
     protected $collection;
 
     /**
-     * @var StoreManagerInterface
-     */
-    protected $storeManager;
-
-    /**
      * @var State
      */
     protected $state;
@@ -45,26 +46,24 @@ class RegenerateProductUrlCommand extends Command
         State $state,
         Collection $collection,
         ProductUrlRewriteGenerator $productUrlRewriteGenerator,
-        UrlPersistInterface $urlPersist,
-        StoreManagerInterface $storeManager
+        UrlPersistInterface $urlPersist
     )
     {
         $this->state = $state;
         $this->collection = $collection;
         $this->productUrlRewriteGenerator = $productUrlRewriteGenerator;
         $this->urlPersist = $urlPersist;
-        $this->storeManager = $storeManager;
         parent::__construct();
     }
 
     protected function configure()
     {
-        $this->setName('iazel:regenurl')
-            ->setDescription('Regenerate url for given products')
+        $this->setName('iazel:cleanurl')
+            ->setDescription('Clean url for given products')
             ->addArgument(
                 'pids',
                 InputArgument::IS_ARRAY,
-                'Products to regenerate'
+                'Products to clean'
             )
             ->addOption(
                 'store', 's',
@@ -77,6 +76,7 @@ class RegenerateProductUrlCommand extends Command
 
 
     /**
+     * remove all products not visible individually from url_rewrite
      * @param InputInterface $inp
      * @param OutputInterface $out
      * @return int|null|void
@@ -93,37 +93,17 @@ class RegenerateProductUrlCommand extends Command
         }
 
         $this->collection->addAttributeToSelect(['url_path', 'url_key'])
-            ->addAttributeToFilter('visibility', ['in' => [2,3,4]]);
+            ->addAttributeToFilter('visibility', 1);
         $list = $this->collection->load();
-
-        $stores = $this->storeManager->getStores();
-        $storeIds = [];
-        foreach($stores as $store){
-            $storeIds[] = $store->getId();
-        }
         foreach ($list as $product) {
 
-            $this->urlPersist->deleteByData([
-                UrlRewrite::ENTITY_ID => $product->getId(),
-                UrlRewrite::ENTITY_TYPE => ProductUrlRewriteGenerator::ENTITY_TYPE,
-                UrlRewrite::REDIRECT_TYPE => 0
-            ]);
             try {
-                if($store_id === Store::DEFAULT_STORE_ID){
-                    foreach($storeIds as $storeId){
-                        $product->setStoreId($storeId);
-                        $this->urlPersist->replace(
-                            $this->productUrlRewriteGenerator->generate($product)
-                        );
-                    }
-                }else{
-                    $product->setStoreId($store_id);
-                    $this->urlPersist->replace(
-                        $this->productUrlRewriteGenerator->generate($product)
-                    );
-                }
-
-                $out->writeln('<info>Regenerated url keys for product ' . $product->getId() . '</info>');
+                $this->urlPersist->deleteByData([
+                    UrlRewrite::ENTITY_ID => $product->getId(),
+                    UrlRewrite::ENTITY_TYPE => ProductUrlRewriteGenerator::ENTITY_TYPE,
+                    UrlRewrite::REDIRECT_TYPE => 0
+                ]);
+                $out->writeln('<info>Deleted Url keys for product: ' . $product->getId() . '</info>');
             } catch (\Exception $e) {
                 $out->writeln('<error>Duplicated url for ' . $product->getId() . '</error>');
             }
