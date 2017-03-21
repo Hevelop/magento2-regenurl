@@ -30,6 +30,11 @@ class RegenerateProductUrlCommand extends Command
      */
     protected $collection;
 
+    /**
+     * @var State
+     */
+    protected $state;
+
     public function __construct(
         State $state,
         Collection $collection,
@@ -37,7 +42,7 @@ class RegenerateProductUrlCommand extends Command
         UrlPersistInterface $urlPersist
     )
     {
-        $state->setAreaCode('adminhtml');
+        $this->state = $state;
         $this->collection = $collection;
         $this->productUrlRewriteGenerator = $productUrlRewriteGenerator;
         $this->urlPersist = $urlPersist;
@@ -69,6 +74,7 @@ class RegenerateProductUrlCommand extends Command
      */
     public function execute(InputInterface $inp, OutputInterface $out)
     {
+        $this->state->setAreaCode(\Magento\Framework\App\Area::AREA_ADMINHTML);
         $store_id = $inp->getOption('store');
         $this->collection->addStoreFilter($store_id)->setStoreId($store_id);
 
@@ -93,6 +99,7 @@ class RegenerateProductUrlCommand extends Command
                 $this->urlPersist->replace(
                     $this->productUrlRewriteGenerator->generate($product)
                 );
+                $out->writeln('<info>' . $product->getId() . '</info>');
             } catch (\Exception $e) {
                 $out->writeln('<error>Duplicated url for ' . $product->getId() . '</error>');
             }
