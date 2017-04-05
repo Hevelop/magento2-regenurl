@@ -33,5 +33,5 @@ php bin/magento iazel:regenurl
 php bin/magento iazel:regenurl -s1 1 2 3 4
 
 # Remove url for all products not visible individually
-php bin/magento iazel:cleanurl
+php bin/magento iazel:cleanurl  
 ```
