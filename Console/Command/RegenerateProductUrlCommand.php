@@ -1,4 +1,5 @@
 <?php
+
 namespace Iazel\RegenProductUrl\Console\Command;
 
 use Magento\Framework\App\State;
@@ -93,30 +94,41 @@ class RegenerateProductUrlCommand extends Command
         }
 
         $this->collection->addAttributeToSelect(['url_path', 'url_key'])
-            ->addAttributeToFilter('visibility', ['in' => [2,3,4]]);
+            ->addAttributeToFilter('visibility', ['in' => [2, 3, 4]]);
         $list = $this->collection->load();
 
         $stores = $this->storeManager->getStores();
         $storeIds = [];
-        foreach($stores as $store){
+        foreach ($stores as $store) {
             $storeIds[] = $store->getId();
         }
         foreach ($list as $product) {
 
-            $this->urlPersist->deleteByData([
-                UrlRewrite::ENTITY_ID => $product->getId(),
-                UrlRewrite::ENTITY_TYPE => ProductUrlRewriteGenerator::ENTITY_TYPE,
-                UrlRewrite::REDIRECT_TYPE => 0
-            ]);
+            if ($store_id === Store::DEFAULT_STORE_ID) {
+                //Delete all url rewrite for default store
+                $this->urlPersist->deleteByData([
+                    UrlRewrite::ENTITY_ID => $product->getId(),
+                    UrlRewrite::ENTITY_TYPE => ProductUrlRewriteGenerator::ENTITY_TYPE,
+                    UrlRewrite::REDIRECT_TYPE => 0
+                ]);
+            } else {
+                //Delete all url rewrite for single store
+                $this->urlPersist->deleteByData([
+                    UrlRewrite::ENTITY_ID => $product->getId(),
+                    UrlRewrite::ENTITY_TYPE => ProductUrlRewriteGenerator::ENTITY_TYPE,
+                    UrlRewrite::REDIRECT_TYPE => 0,
+                    UrlRewrite::STORE_ID => $store_id,
+                ]);
+            }
             try {
-                if($store_id === Store::DEFAULT_STORE_ID){
-                    foreach($storeIds as $storeId){
+                if ($store_id === Store::DEFAULT_STORE_ID) {
+                    foreach ($storeIds as $storeId) {
                         $product->setStoreId($storeId);
                         $this->urlPersist->replace(
                             $this->productUrlRewriteGenerator->generate($product)
                         );
                     }
-                }else{
+                } else {
                     $product->setStoreId($store_id);
                     $this->urlPersist->replace(
                         $this->productUrlRewriteGenerator->generate($product)
